@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+# *very* loosely based on https://github.com/nawar/kodi-cli
+# RPC defined in https://kodi.wiki/view/JSON-RPC_API/v12
+
+error() {
+	printf "ERROR: %s\n" "$@" >&2
+	exit 1
+}
+
+req() {
+	local method="$1" params="" param req filter=( cat )
+	shift
+	while (($# >= 2)); do
+		params="${params:+$params, }\"$1\": $2"
+		shift 2
+	done
+	if (( $# > 0 )); then
+		filter=( jq -r -e ".result$1 // ( . | halt_error )" )
+	fi
+	req='{"jsonrpc": "2.0", "id": 0, "method": '"\"$method\"${params:+, \"params\": { "$params" \}}}"
+	: echo "$req"
+	curl -s -X POST --header "Content-Type: application/json" \
+			"http://$KODI_URI/jsonrpc" -d "$req" \
+		| tee \
+		| "${filter[@]}"
+}   
+
+init() {
+	local IFS=$'\n' host port user pass
+	
+	[[ -n "$KODI_URI" ]] && return
+	[[ -f "$HOME/.kodirc" ]] || error "no \$KODI_URI or ~/.kodirc"
+
+	read -r -d '' host port user pass < "$HOME/.kodirc"
+	KODI_URI="$user:$pass@$host:$port"
+}
+
+play_pause() {
+	local action="$1"
+	local player
+	player=$(req Player.GetActivePlayers '[0].playerid') \
+		|| error "No active player"
+
+	req Player.PlayPause playerid "$player" ${action:+play "$action"} '.speed' \
+		|| error "Could not play/pause"
+}
+
+play() {
+	play_pause true
+}
+
+pause() {
+	play_pause false
+}
+
+repeat() {
+	local action=${1:-all} # off one all
+	local player
+	player=$(req Player.GetActivePlayers '[0].playerid') \
+		|| error "No active player"
+
+	local repeat
+	repeat=$(req Player.GetProperties playerid 0 properties '["repeat"]' '.repeat') \
+		|| error "Could not get player repeat state"
+	if [[ "$repeat" == "$action" ]]; then
+		echo "OK already"
+		return
+	fi
+
+	req Player.SetRepeat playerid "$player" repeat "\"$action\"" "" \
+		|| error "Could not set repeat $action"
+}
+
+help() {
+	cat <<EOF
+Run commands e.g. $0 play
+
+Available commands:
+  play_pause (toggles)
+  play
+  pause
+  repeat [all|one|off]
+EOF
+}
+
+init
+
+"$@"
