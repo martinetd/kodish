@@ -24,11 +24,11 @@ req() {
 			"http://$KODI_URI/jsonrpc" -d "$req" \
 		| tee \
 		| "${filter[@]}"
-}   
+}
 
 init() {
 	local IFS=$'\n' host port user pass
-	
+
 	[[ -n "$KODI_URI" ]] && return
 	[[ -f "$HOME/.kodirc" ]] || error "no \$KODI_URI or ~/.kodirc"
 
