@@ -72,6 +72,24 @@ repeat() {
 		|| error "Could not set repeat $action"
 }
 
+shuffle() {
+	local action=${1:-true} # true false \"toggle\"
+	local player
+	player=$(req Player.GetActivePlayers '[0].playerid') \
+		|| error "No active player"
+
+	local shuffled
+	shuffled=$(req Player.GetProperties playerid "$player" properties '["shuffled"]' '.shuffled') \
+		|| error "Could not get player shuffled state"
+	if [[ "$shuffled" == "$action" ]]; then
+		echo "OK already"
+		return
+	fi
+
+	req Player.SetShuffle playerid "$player" shuffle "$action" "" \
+		|| error "Could not set shuffle $action"
+}
+
 help() {
 	cat <<EOF
 Run commands e.g. $0 play
