@@ -61,7 +61,7 @@ repeat() {
 		|| error "No active player"
 
 	local repeat
-	repeat=$(req Player.GetProperties playerid 0 properties '["repeat"]' '.repeat') \
+	repeat=$(req Player.GetProperties playerid "$player" properties '["repeat"]' '.repeat') \
 		|| error "Could not get player repeat state"
 	if [[ "$repeat" == "$action" ]]; then
 		echo "OK already"
