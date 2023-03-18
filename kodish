@@ -66,6 +66,28 @@ pause() {
 	play_pause false
 }
 
+fadeout() {
+	local vol
+
+	# drop stdout to /dev/null unless verbose (will show fadeout %)
+	if [ -z "$VERBOSE" ]; then
+		exec 1>/dev/null
+	fi
+
+	vol=$(req Application.GetProperties "properties" '["volume"]' .volume) \
+		|| error "Could not get initial volume"
+	CLEANUP+=( "req Application.SetVolume volume $vol ''" )
+
+	# set volume to 0 and pause. cleanup will restore volume after pause.
+	while (( vol-- > 0 )); do
+		req Application.SetVolume volume $vol "" \
+			|| error "Could not lower volume to $vol"
+		sleep 2
+	done
+	echo "Pausing"
+	pause
+}
+
 repeat() {
 	local action=${1:-all} # off one all
 	local player
