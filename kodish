@@ -3,6 +3,16 @@
 # *very* loosely based on https://github.com/nawar/kodi-cli
 # RPC defined in https://kodi.wiki/view/JSON-RPC_API/v12
 
+cleanup() {
+	local i rc=$?
+
+	while read -r i; do
+		eval ${CLEANUP[i]}
+	done < <(printf "%s\n" "${!CLEANUP[@]}" | tac)
+
+	return $rc
+}
+
 error() {
 	printf "ERROR: %s\n" "$@" >&2
 	exit 1
@@ -31,6 +41,8 @@ init() {
 
 	[[ -n "$KODI_URI" ]] && return
 	[[ -f "$HOME/.kodirc" ]] || error "no \$KODI_URI or ~/.kodirc"
+	CLEANUP=( )
+	trap cleanup EXIT
 
 	read -r -d '' host port user pass < "$HOME/.kodirc"
 	KODI_URI="$user:$pass@$host:$port"
