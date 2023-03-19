@@ -74,9 +74,14 @@ fadeout() {
 		exec 1>/dev/null
 	fi
 
+	# try to pause even if something errored out...
+	# but cleanup is executed in reverse order so
+	# fiddle with indices to pause before restoring volume
+	CLEANUP[11]="echo 'Pausing...'; pause"
+
 	vol=$(req Application.GetProperties "properties" '["volume"]' .volume) \
 		|| error "Could not get initial volume"
-	CLEANUP+=( "req Application.SetVolume volume $vol ''" )
+	CLEANUP[10]="req Application.SetVolume volume $vol ''"
 
 	# set volume to 0 and pause. cleanup will restore volume after pause.
 	while (( vol-- > 0 )); do
@@ -84,8 +89,6 @@ fadeout() {
 			|| error "Could not lower volume to $vol"
 		sleep 2
 	done
-	echo "Pausing"
-	pause
 }
 
 repeat() {
