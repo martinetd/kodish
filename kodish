@@ -177,6 +177,34 @@ playlist() {
 	req Playlist.GetItems playlistid "$playlistid" ''
 }
 
+status() {
+	local player
+	player=$(req Player.GetActivePlayers '[0].playerid') \
+		|| error "No active player"
+
+	local label file speed shuffled repeat
+	label=$(req Player.GetItem playerid "$player" .item.label) || label="UNKNOWN"
+	file=$(req Player.GetItem playerid "$player" properties '["file"]' .item.file) || file="UNKNOWN"
+	file="${file#$MEDIA_PREFIX}"
+	speed=$(req Player.GetProperties playerid "$player" properties '["speed"]' .speed) || speed="UNKNOWN"
+	case "$speed" in
+	0) speed="Paused";;
+	1) speed="Playing";;
+	UNKNOWN) ;;
+	*) speed="Playing ($speed)";;
+	esac
+	shuffled=$(req Player.GetProperties playerid "$player" properties '["shuffled"]' .shuffled) || shuffled="UNKNOWN"
+	repeat=$(req Player.GetProperties playerid "$player" properties '["repeat"]' .repeat) || repeat="UNKNOWN"
+
+	cat <<EOF
+State: $speed
+Current: $label
+$file
+Shuffled: $shuffled
+Repeat: $repeat
+EOF
+}
+
 help() {
 	cat <<EOF
 Run commands e.g. $0 play
