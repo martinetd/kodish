@@ -294,24 +294,25 @@ status() {
 	file="${file#$MEDIA_PREFIX}"
 
 	local props
-	local speed shuffled repeat
+	local speed shuffled repeat playlistid position percentage
 	local time time_hour time_min time_sec time_milli
 	local ttime ttime_hour ttime_min ttime_sec ttime_milli
 	props=$(req Player.GetProperties playerid "$player" \
-			properties '["speed", "shuffled", "repeat", "time", "totaltime"]' \
-			' | "\(.speed) \(.shuffled) \(.repeat) " +
+			properties '["speed", "shuffled", "repeat", "playlistid", "position", "percentage", "time", "totaltime"]' \
+			' | "\(.speed) \(.shuffled) \(.repeat) \(.playlistid) \(.position) \(.percentage) " +
 			    "\(.time | "\(.hours) \(.minutes) \(.seconds) \(.milliseconds)") " +
 			    "\(.totaltime | "\(.hours) \(.minutes) \(.seconds) \(.milliseconds)")"'
 		) || error "Could not get player properties"
-	read -r speed shuffled repeat \
+	read -r speed shuffled repeat playlistid position percentage \
 		time_hour time_min time_sec time_milli \
 		ttime_hour ttime_min ttime_sec ttime_milli <<<"$props"
-	printf -v time "%d:%02d:%02d.%03d" "$time_hour" "$time_min" "$time_sec" "$time_milli"
+	printf -v time "%d:%02d:%02d.%03d" "$time_hour" "$time_min" "$time_sec" "$time_milli" \
+		|| error "time not well formated: $props"
 	printf -v ttime "%d:%02d:%02d.%03d" "$ttime_hour" "$ttime_min" "$ttime_sec" "$ttime_milli"
 	case "$speed" in
 	0) speed="Paused";;
 	1) speed="Playing";;
-	*) speed="Playing ($speed)";;
+	*) speed="Playing (speed: $speed)";;
 	esac
 
 	local volume muted
@@ -328,7 +329,8 @@ status() {
 State: $speed
 Current: $label
 $file
-Position: $time / $ttime
+Position: $time / $ttime (${percentage:0:5}%)
+Playlist: $playlistid (track n° $position)
 Shuffled: $shuffled
 Repeat: $repeat
 Volume: $volume
