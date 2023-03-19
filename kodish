@@ -205,26 +205,50 @@ status() {
 	player=$(req Player.GetActivePlayers '[0].playerid') \
 		|| error "No active player"
 
-	local label file speed shuffled repeat
+	local label file
 	label=$(req Player.GetItem playerid "$player" .item.label) || label="UNKNOWN"
 	file=$(req Player.GetItem playerid "$player" properties '["file"]' .item.file) || file="UNKNOWN"
 	file="${file#$MEDIA_PREFIX}"
-	speed=$(req Player.GetProperties playerid "$player" properties '["speed"]' .speed) || speed="UNKNOWN"
+
+	local props
+	local speed shuffled repeat
+	local time time_hour time_min time_sec time_milli
+	local ttime ttime_hour ttime_min ttime_sec ttime_milli
+	props=$(req Player.GetProperties playerid "$player" \
+			properties '["speed", "shuffled", "repeat", "time", "totaltime"]' \
+			' | "\(.speed) \(.shuffled) \(.repeat) " +
+			    "\(.time | "\(.hours) \(.minutes) \(.seconds) \(.milliseconds)") " +
+			    "\(.totaltime | "\(.hours) \(.minutes) \(.seconds) \(.milliseconds)")"'
+		) || error "Could not get player properties"
+	read -r speed shuffled repeat \
+		time_hour time_min time_sec time_milli \
+		ttime_hour ttime_min ttime_sec ttime_milli <<<"$props"
+	printf -v time "%d:%02d:%02d.%03d" "$time_hour" "$time_min" "$time_sec" "$time_milli"
+	printf -v ttime "%d:%02d:%02d.%03d" "$ttime_hour" "$ttime_min" "$ttime_sec" "$ttime_milli"
 	case "$speed" in
 	0) speed="Paused";;
 	1) speed="Playing";;
-	UNKNOWN) ;;
 	*) speed="Playing ($speed)";;
 	esac
-	shuffled=$(req Player.GetProperties playerid "$player" properties '["shuffled"]' .shuffled) || shuffled="UNKNOWN"
-	repeat=$(req Player.GetProperties playerid "$player" properties '["repeat"]' .repeat) || repeat="UNKNOWN"
+
+	local volume muted
+	props=$(req Application.GetProperties \
+			properties '["volume", "muted"]' \
+			' | "\(.volume) \(.muted)"'
+		) || error "Could not get application properties"
+	read -r volume muted <<<"$props"
+	case "$muted" in
+	true) volume="$volume (Muted)";;
+	esac
 
 	cat <<EOF
 State: $speed
 Current: $label
 $file
+Position: $time / $ttime
 Shuffled: $shuffled
 Repeat: $repeat
+Volume: $volume
 EOF
 }
 
