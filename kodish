@@ -59,8 +59,20 @@ play_pause() {
 	player=$(req Player.GetActivePlayers '[0].playerid') \
 		|| error "No active player"
 
-	req Player.PlayPause playerid "$player" ${action:+play "$action"} '.speed' \
-		|| error "Could not play/pause"
+	# drop stdout to /dev/null unless verbose (will show fadeout %)
+	if [ -z "$VERBOSE" ]; then
+		exec 1>/dev/null
+	fi
+
+	if ! req Player.PlayPause playerid "$player" ${action:+play "$action"} '.speed' 2>&1; then
+		if [[ "$action" == true ]]; then
+			# just play whatever we can finid...
+			reqok Player.Open item '{"playlistid": 0, "position": 0}' \
+				|| error "Could not resume"
+		else
+			error "Could not pause"
+		fi
+	fi
 }
 
 play() {
