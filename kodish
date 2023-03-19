@@ -206,6 +206,28 @@ next() {
 	goto '"next"'
 }
 
+prev() {
+	# Player.GoTo has a previous option, but that doesn't seem to work well?
+	# Instead get current position in playlist and GoTo it.
+	local player
+	player=$(req Player.GetActivePlayers '[0].playerid') \
+		|| error "No active player"
+
+	local playlistid
+	playlistid=$(req Player.GetProperties playerid "$player" properties '["playlistid"]' .playlistid) \
+		|| error "Could not find active playlist"
+	local position
+	position=$(req Player.GetProperties playerid "$player" properties '["position"]' .position) \
+		|| error "Could not find active playlist position"
+	
+	if (( position == 0 )); then
+		position=$(req Playlist.GetProperties playlistid "$playlistid" properties '["size"]' .size) \
+			|| error "Could not get playlist size"
+	fi
+
+	reqok Player.GoTo playerid "$player" to "$((position - 1))"
+}
+
 status() {
 	local player
 	player=$(req Player.GetActivePlayers '[0].playerid') \
