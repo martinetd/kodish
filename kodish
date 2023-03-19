@@ -193,12 +193,17 @@ volume() {
 }
 vol() { volume "$@"; }
 
-next() {
+goto() {
+	local to="$1" # number, "next", "previous"
+
 	local player
 	player=$(req Player.GetActivePlayers '[0].playerid') \
 		|| error "No active player"
 
-	reqok Player.GoTo playerid "$player" to '"next"'
+	reqok Player.GoTo playerid "$player" to "$to"
+}
+next() {
+	goto '"next"'
 }
 
 status() {
