@@ -170,12 +170,13 @@ playlist_add() {
 }
 
 playlist() {
-	# XXX better argument parsing:
-	# - format (audio/video/picture)
-	local format=audio
+	local player
+	player=$(req Player.GetActivePlayers '[0].playerid') \
+		|| error "No active player"
+
 	local playlistid
-	playlistid=$(req Playlist.GetPlaylists ' | .[] | select(.type == "'"$format"'").playlistid') \
-		|| error "Could not find playlist for $format"
+	playlistid=$(req Player.GetProperties playerid "$player" properties '["playlistid"]' .playlistid) \
+		|| error "Could not find active playlist"
 
 	req Playlist.GetItems playlistid "$playlistid" ''
 }
