@@ -126,6 +126,7 @@ shuffle() {
 	req Player.SetShuffle playerid "$player" shuffle "$action" "" \
 		|| error "Could not set shuffle $action"
 }
+random() { shuffle "$@"; }
 
 help() {
 	cat <<EOF
