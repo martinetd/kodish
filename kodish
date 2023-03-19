@@ -41,15 +41,16 @@ reqok() {
 }
 
 init() {
-	local IFS=$'\n' host port user pass
+	local IFS=$'\n' host port user pass media_prefix _
 
 	[[ -n "$KODI_URI" ]] && return
 	[[ -f "$HOME/.kodirc" ]] || error "no \$KODI_URI or ~/.kodirc"
 	CLEANUP=( )
 	trap cleanup EXIT
 
-	read -r -d '' host port user pass < "$HOME/.kodirc"
+	read -r -d '' host port user pass media_prefix _ < "$HOME/.kodirc"
 	KODI_URI="$user:$pass@$host:$port"
+	MEDIA_PREFIX="$media_prefix"
 }
 
 play_pause() {
