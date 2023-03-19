@@ -228,6 +228,24 @@ prev() {
 	reqok Player.GoTo playerid "$player" to "$((position - 1))"
 }
 
+find() {
+	local search="$1"
+
+	local player
+	player=$(req Player.GetActivePlayers '[0].playerid') \
+		|| error "No active player"
+
+	local playlistid
+	playlistid=$(req Player.GetProperties playerid "$player" properties '["playlistid"]' .playlistid) \
+		|| error "Could not find active playlist"
+
+	local index
+	index=$(req Playlist.GetItems playlistid 0 '.items | map(.label | contains("'"$search"'")) | index(true)') \
+		|| error "Could not find $search"
+
+	reqok Player.GoTo playerid "$player" to "$index"
+}
+
 status() {
 	local player
 	player=$(req Player.GetActivePlayers '[0].playerid') \
