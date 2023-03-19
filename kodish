@@ -36,6 +36,10 @@ req() {
 		| "${filter[@]}"
 }
 
+reqok() {
+	req "$@" '== "OK" // null' >/dev/null
+}
+
 init() {
 	local IFS=$'\n' host port user pass
 
