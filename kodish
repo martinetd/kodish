@@ -212,7 +212,10 @@ goto() {
 	player=$(req Player.GetActivePlayers '[0].playerid') \
 		|| error "No active player"
 
-	reqok Player.GoTo playerid "$player" to "$to"
+	reqok Player.GoTo playerid "$player" to "$to" \
+		|| error "Could not find $to in playlist"
+
+	status
 }
 next() {
 	goto '"next"'
@@ -237,7 +240,10 @@ prev() {
 			|| error "Could not get playlist size"
 	fi
 
-	reqok Player.GoTo playerid "$player" to "$((position - 1))"
+	reqok Player.GoTo playerid "$player" to "$((position - 1))" \
+		|| error "Could not find item $((position - 1)) in playlist"
+
+	status
 }
 
 find() {
@@ -255,7 +261,10 @@ find() {
 	index=$(req Playlist.GetItems playlistid 0 '.items | map(.label | contains("'"$search"'")) | index(true)') \
 		|| error "Could not find $search"
 
-	reqok Player.GoTo playerid "$player" to "$index"
+	reqok Player.GoTo playerid "$player" to "$index" \
+		|| error "Could not find item $index in playlist"
+
+	status
 }
 
 seek() {
