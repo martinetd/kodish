@@ -26,7 +26,7 @@ req() {
 		shift 2
 	done
 	if (( $# > 0 )); then
-		filter=( jq -r "if (.result$1 != null) then .result$1 else . | halt_error end" )
+		filter=( jq -r "if ((.result$1) != null) then .result$1 else . | halt_error end" )
 	fi
 	req='{"jsonrpc": "2.0", "id": 0, "method": '"\"$method\"${params:+, \"params\": { "$params" \}}}"
 	: echo "$req"
