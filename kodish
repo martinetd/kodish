@@ -163,6 +163,9 @@ playlist_add() {
 	reqok Player.Open item '{"playlistid": '"$playlistid"', "position": 0}' \
 		|| error "Couldn't play newly edited playlist"
 
+	# kodi won't remember repeat, force it here...
+	repeat
+
 	echo "Added $folder"
 }
 
