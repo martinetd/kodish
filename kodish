@@ -180,6 +180,18 @@ playlist() {
 	req Playlist.GetItems playlistid "$playlistid" ''
 }
 
+volume() {
+	local val="$1" # percent, "increment", "decrement"
+
+	case "$val" in
+	up) val='"increment"';;
+	down) val='"decrement"';;
+	esac
+
+	req Application.SetVolume volume "$val" ''
+}
+vol() { volume "$@"; }
+
 status() {
 	local player
 	player=$(req Player.GetActivePlayers '[0].playerid') \
