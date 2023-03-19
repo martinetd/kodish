@@ -133,6 +133,50 @@ shuffle() {
 }
 random() { shuffle "$@"; }
 
+playlist_add() {
+	# XXX better argument parsing:
+	# - format (audio/video/picture)
+	# - append or replace playlist
+	# - search instead of assume directory? not recursive?
+	# appends to audio playlist
+	local format=audio
+	local action=append
+	local folder="$1"
+	case "$folder" in
+	/*) ;;
+	*) folder="$MEDIA_PREFIX/$folder";;
+	esac
+
+	local playlistid
+	playlistid=$(req Playlist.GetPlaylists ' | .[] | select(.type == "'"$format"'").playlistid') \
+		|| error "Could not find playlist for $format"
+
+	case "$action" in
+	append) ;;
+	replace) req Playlist.clear playlistid "$playlistid" || error "Couldn't clear playlist";;
+	*) error "Unhandled action $action";;
+	esac
+
+	reqok Playlist.add playlistid "$playlistid" item '{"directory": "'"$folder"'", "recursive": true}' \
+		|| error "Couldn't add $folder to playlist"
+
+	reqok Player.Open item '{"playlistid": '"$playlistid"', "position": 0}' \
+		|| error "Couldn't play newly edited playlist"
+
+	echo "Added $folder"
+}
+
+playlist() {
+	# XXX better argument parsing:
+	# - format (audio/video/picture)
+	local format=audio
+	local playlistid
+	playlistid=$(req Playlist.GetPlaylists ' | .[] | select(.type == "'"$format"'").playlistid') \
+		|| error "Could not find playlist for $format"
+
+	req Playlist.GetItems playlistid "$playlistid" ''
+}
+
 help() {
 	cat <<EOF
 Run commands e.g. $0 play
