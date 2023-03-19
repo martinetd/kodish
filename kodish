@@ -246,6 +246,43 @@ find() {
 	reqok Player.GoTo playerid "$player" to "$index"
 }
 
+seek() {
+	local pos="$1"
+
+	local player
+	player=$(req Player.GetActivePlayers '[0].playerid') \
+		|| error "No active player"
+
+	case "$pos" in
+	*%)
+		# jump to %
+		pos='{"percentage": '"${pos%'%'}"'}';;
+	+*|-*)
+
+		pos='{"seconds": '"${pos#+}"'}'
+		;;
+	*:*)
+		local hour min sec
+		sec="${pos##*:}"
+		min="${pos%:*}"
+		hour="${min%:*}"
+		[[ "$hour" = "$min" ]] && hour=0
+		min="${min##*:}"
+		[[ "$hour" = "${hour%:*}" ]] || error "Only up to hour:min:sec"
+		pos='{"time": {"hours": '"$hour"', "minutes": '"$min"', "seconds": '"$sec"'}}'
+		;;
+	*)
+		local hour min sec
+		hour=$((pos/3600))
+		min=$((pos/60 % 60))
+		sec=$((pos % 60))
+		pos='{"time": {"hours": '"$hour"', "minutes": '"$min"', "seconds": '"$sec"'}}'
+		;;
+	esac
+
+	req Player.Seek playerid "$player" value "$pos" ''
+}
+
 status() {
 	local player
 	player=$(req Player.GetActivePlayers '[0].playerid') \
