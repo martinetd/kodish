@@ -193,6 +193,27 @@ playlist() {
 	req Playlist.GetItems playlistid "$playlistid" ''
 }
 
+recent() {
+	local num="${1:-20}"
+
+	local player
+	player=$(req Player.GetActivePlayers '[0].playerid') \
+		|| error "No active player"
+
+	local playlistid position min
+	playlistid=$(req Player.GetProperties playerid "$player" \
+				properties '["playlistid", "position"]' \
+				' | "\(.playlistid) \(.position)"') \
+			|| error "could not get active playlist"
+	read -r playlistid position <<<"$playlistid"
+
+	min=$((position - num))
+	(( min < 0 )) && min=0
+
+	req Playlist.GetItems playlistid "$playlistid" .items \
+		| jq 'to_entries | map("\(.key): \(.value.label)")['"$min:$((position+5))"']'
+}
+
 volume() {
 	local val="$1" # percent, "increment", "decrement"
 
