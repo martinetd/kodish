@@ -146,7 +146,7 @@ shuffle() {
 random() { shuffle "$@"; }
 reshuffle() { shuffle false; shuffle true; }
 
-playlist_add() {
+queue() {
 	# XXX better argument parsing:
 	# - format (audio/video/picture)
 	# - append or replace playlist
@@ -154,11 +154,7 @@ playlist_add() {
 	# appends to audio playlist
 	local format=audio
 	local action=append
-	local folder="$1"
-	case "$folder" in
-	/*) ;;
-	*) folder="$MEDIA_PREFIX/$folder";;
-	esac
+	local folder
 
 	local playlistid
 	playlistid=$(req Playlist.GetPlaylists ' | .[] | select(.type == "'"$format"'").playlistid') \
@@ -170,8 +166,14 @@ playlist_add() {
 	*) error "Unhandled action $action";;
 	esac
 
-	reqok Playlist.add playlistid "$playlistid" item '{"directory": "'"$folder"'", "recursive": true}' \
-		|| error "Couldn't add $folder to playlist"
+	for folder; do
+		case "$folder" in
+		/*) ;;
+		*) folder="$MEDIA_PREFIX/$folder";;
+		esac
+		reqok Playlist.add playlistid "$playlistid" item '{"directory": "'"$folder"'", "recursive": true}' \
+			|| error "Couldn't add $folder to playlist"
+	done
 
 	reqok Player.Open item '{"playlistid": '"$playlistid"', "position": 0}' \
 		|| error "Couldn't play newly edited playlist"
