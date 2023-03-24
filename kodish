@@ -144,6 +144,7 @@ shuffle() {
 		|| error "Could not set shuffle $action"
 }
 random() { shuffle "$@"; }
+reshuffle() { shuffle false; shuffle true; }
 
 playlist_add() {
 	# XXX better argument parsing:
