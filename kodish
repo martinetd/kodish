@@ -414,4 +414,5 @@ EOF
 
 init
 
+[[ "$#" = 0 ]] && set -- status
 "$@"
