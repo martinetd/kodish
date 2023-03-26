@@ -193,28 +193,26 @@ playlist() {
 	playlistid=$(req Player.GetProperties playerid "$player" properties '["playlistid"]' .playlistid) \
 		|| error "Could not find active playlist"
 
-	req Playlist.GetItems playlistid "$playlistid" ''
+	req Playlist.GetItems playlistid "$playlistid" '.items | to_entries | map("\(.key): \(.value.label)")'
 }
 
 recent() {
-	local num="${1:-20}"
+	local before="${1:-20}" after="${2:-2}"
 
 	local player
 	player=$(req Player.GetActivePlayers '[0].playerid') \
 		|| error "No active player"
 
-	local playlistid position min
-	playlistid=$(req Player.GetProperties playerid "$player" \
-				properties '["playlistid", "position"]' \
-				' | "\(.playlistid) \(.position)"') \
-			|| error "could not get active playlist"
-	read -r playlistid position <<<"$playlistid"
+	local position start end
+	position=$(req Player.GetProperties playerid "$player" \
+			properties '["position"]' .position) \
+		|| error "Could not get playlist position"
 
-	min=$((position - num))
-	(( min < 0 )) && min=0
+	start=$((position - before))
+	(( start < 0 )) && start=0
+	end=$((position + after))
 
-	req Playlist.GetItems playlistid "$playlistid" .items \
-		| jq 'to_entries | map("\(.key): \(.value.label)")['"$min:$((position+5))"']'
+	playlist | jq ".[$start:$end]"
 }
 
 volume() {
