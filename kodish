@@ -221,6 +221,19 @@ volume() {
 	case "$val" in
 	up) val='"increment"';;
 	down) val='"decrement"';;
+	"")
+		# query instead...
+		local volume muted
+		props=$(req Application.GetProperties \
+				properties '["volume", "muted"]' \
+				' | "\(.volume) \(.muted)"'
+			) || error "Could not get application properties"
+		read -r volume muted <<<"$props"
+		case "$muted" in
+		true) volume="$volume (Muted)";;
+		esac
+		echo "$volume"
+		return
 	esac
 
 	req Application.SetVolume volume "$val" ''
@@ -358,15 +371,8 @@ status() {
 	*) speed="Playing (speed: $speed)";;
 	esac
 
-	local volume muted
-	props=$(req Application.GetProperties \
-			properties '["volume", "muted"]' \
-			' | "\(.volume) \(.muted)"'
-		) || error "Could not get application properties"
-	read -r volume muted <<<"$props"
-	case "$muted" in
-	true) volume="$volume (Muted)";;
-	esac
+	local volume
+	volume=$(volume)
 
 	cat <<EOF
 State: $speed
