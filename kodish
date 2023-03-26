@@ -256,6 +256,10 @@ goto() {
 	reqok Player.GoTo playerid "$player" to "$to" \
 		|| error "Could not find $to in playlist"
 
+	# Need to wait a bit for goto to be applied, or
+	# status will still be on the previous song...
+	sleep 0.5
+
 	status
 }
 next() {
