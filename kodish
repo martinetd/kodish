@@ -53,12 +53,18 @@ init() {
 	MEDIA_PREFIX="$media_prefix"
 }
 
+get_player() {
+	[[ -n "$player" ]] && return
+	player=$(req Player.GetActivePlayers '[0].playerid') && return
+
+	echo "No active player - trying 0"
+	player=0
+}
+
 play_pause() {
 	local action="$1"
 	local player="$player"
-	[[ -n "$player" ]] \
-		|| player=$(req Player.GetActivePlayers '[0].playerid') \
-		|| error "No active player"
+	get_player
 
 	# drop stdout to /dev/null unless verbose (will show fadeout %)
 	if [ -z "$VERBOSE" ]; then
@@ -112,9 +118,7 @@ fadeout() {
 repeat() {
 	local action=${1:-all} # off one all
 	local player="$player"
-	[[ -n "$player" ]] \
-		|| player=$(req Player.GetActivePlayers '[0].playerid') \
-		|| error "No active player"
+	get_player
 
 	local repeat
 	repeat=$(req Player.GetProperties playerid "$player" properties '["repeat"]' '.repeat') \
@@ -131,9 +135,7 @@ repeat() {
 shuffle() {
 	local action=${1:-true} # true false \"toggle\"
 	local player="$player"
-	[[ -n "$player" ]] \
-		|| player=$(req Player.GetActivePlayers '[0].playerid') \
-		|| error "No active player"
+	get_player
 
 	local shuffled
 	shuffled=$(req Player.GetProperties playerid "$player" properties '["shuffled"]' '.shuffled') \
@@ -189,9 +191,7 @@ queue() {
 
 playlist() {
 	local player="$player"
-	[[ -n "$player" ]] \
-		|| player=$(req Player.GetActivePlayers '[0].playerid') \
-		|| error "No active player"
+	get_player
 
 	local playlistid
 	playlistid=$(req Player.GetProperties playerid "$player" properties '["playlistid"]' .playlistid) \
@@ -204,9 +204,7 @@ recent() {
 	local before="${1:-20}" after="${2:-2}"
 
 	local player="$player"
-	[[ -n "$player" ]] \
-		|| player=$(req Player.GetActivePlayers '[0].playerid') \
-		|| error "No active player"
+	get_player
 
 	local position start end
 	position=$(req Player.GetProperties playerid "$player" \
@@ -249,9 +247,7 @@ goto() {
 	local to="$1" # number, "next", "previous"
 
 	local player="$player"
-	[[ -n "$player" ]] \
-		|| player=$(req Player.GetActivePlayers '[0].playerid') \
-		|| error "No active player"
+	get_player
 
 	reqok Player.GoTo playerid "$player" to "$to" \
 		|| error "Could not find $to in playlist"
@@ -270,9 +266,7 @@ prev() {
 	# Player.GoTo has a previous option, but that doesn't seem to work well?
 	# Instead get current position in playlist and GoTo it.
 	local player="$player"
-	[[ -n "$player" ]] \
-		|| player=$(req Player.GetActivePlayers '[0].playerid') \
-		|| error "No active player"
+	get_player
 
 	local playlistid
 	playlistid=$(req Player.GetProperties playerid "$player" properties '["playlistid"]' .playlistid) \
@@ -280,7 +274,7 @@ prev() {
 	local position
 	position=$(req Player.GetProperties playerid "$player" properties '["position"]' .position) \
 		|| error "Could not find active playlist position"
-	
+
 	if (( position == 0 )); then
 		position=$(req Playlist.GetProperties playlistid "$playlistid" properties '["size"]' .size) \
 			|| error "Could not get playlist size"
@@ -296,9 +290,7 @@ find() {
 	local search="$1"
 
 	local player="$player"
-	[[ -n "$player" ]] \
-		|| player=$(req Player.GetActivePlayers '[0].playerid') \
-		|| error "No active player"
+	get_player
 
 	local playlistid
 	playlistid=$(req Player.GetProperties playerid "$player" properties '["playlistid"]' .playlistid) \
@@ -318,9 +310,7 @@ seek() {
 	local pos="$1"
 
 	local player="$player"
-	[[ -n "$player" ]] \
-		|| player=$(req Player.GetActivePlayers '[0].playerid') \
-		|| error "No active player"
+	get_player
 
 	case "$pos" in
 	*%)
@@ -354,9 +344,7 @@ seek() {
 
 status() {
 	local player="$player"
-	[[ -n "$player" ]] \
-		|| player=$(req Player.GetActivePlayers '[0].playerid') \
-		|| error "No active player"
+	get_player
 
 	local label file
 	label=$(req Player.GetItem playerid "$player" .item.label) || label="UNKNOWN"
