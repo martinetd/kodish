@@ -73,7 +73,7 @@ play_pause() {
 
 	if ! req Player.PlayPause playerid "$player" ${action:+play "$action"} '.speed' 2>&1; then
 		if [[ "$action" == true ]]; then
-			# just play whatever we can finid...
+			# just play whatever we can find...
 			reqok Player.Open item '{"playlistid": 0, "position": 0}' \
 				|| error "Could not resume"
 		else
@@ -242,6 +242,31 @@ volume() {
 	req Application.SetVolume volume "$val" ''
 }
 vol() { volume "$@"; }
+
+party() {
+	local set="$1" # empty=query, true, false, "toggle"
+
+	local player="$player"
+	get_player
+
+	case "$set" in
+	"")
+		req Player.GetProperties playerid "$player" properties '["partymode"]' ".partymode"
+		return
+		;;
+	true|false)
+		;;
+	toggle)
+		set='"toggle"'
+		;;
+	*)
+		error "Arg must be empty, true/false or toggle"
+		;;
+	esac
+	reqok Player.SetPartyMode playerid "$player" partymode "$set" \
+		|| error "Could not set player $player partymode"
+}
+
 
 goto() {
 	local to="$1" # number, "next", "previous"
